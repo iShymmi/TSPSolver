@@ -24,17 +24,11 @@ public class TSPSolver {
     public TSPSolver() {
     }
 
-    //Breed method
-    private int[] breed(int routeAIndex, int routeBIndex){return new int[0];}
-
-    //Mutate method
-    private int[] mutate(int routeIndex){return new int[0];}
-
     private void selection(){}
 
     private void countLength(){}
 
-    /*
+    /**
         Generates individuals with a random arrangement of genes
      */
     private void generatePopulation(){
@@ -44,7 +38,7 @@ public class TSPSolver {
         }
     }
 
-    /*
+    /**
         Shuffle genes
         First and last gene indicates the starting point
 
@@ -65,7 +59,7 @@ public class TSPSolver {
         }
 
         for(int i = 1; i < genesIndexes.length -1; i++){
-            int randomIndex = random.nextInt((genesIndexes.length - 1) - 1) + 1;
+            int randomIndex = random.nextInt((genesIndexes.length - 2)) + 1;
             int temp = genesIndexes[randomIndex];
             genesIndexes[randomIndex] = genesIndexes[i];
             genesIndexes[i] = temp;
@@ -76,8 +70,8 @@ public class TSPSolver {
 
     private void drawCorssAndMutationProbability(){}
 
-    /*
-        init() - checks if any of the required variables is empty
+    /**
+        Checks if any of the required variables is empty
         If it pass validation it inits the population matrix with value of populationSize
 
         throws NullPointerException() if any of argument isn't setted
@@ -95,13 +89,16 @@ public class TSPSolver {
         population = new Individual[populationSize];
     }
 
-    /*
-        isDataValid() - checks if provided distances matix has size [n][n]
+    /**
+        Checks if provided distances matix has size [n][n]
         It doesn't check if distance[n][m] == distance[m][n] because in real case it can be different
 
         throws new IllegalArgumentExpception() if its invalid
      */
     private void isDataValid(double[][] data){
+        if(data.length < 3){
+            throw new IllegalArgumentException("Required minimum 3 points");
+        }
         for (double[] distance : data) {
             if (data.length != distance.length) {
                 throw new IllegalArgumentException("Incorrect data size");
@@ -151,16 +148,28 @@ public class TSPSolver {
                 {1.0, 2.0, 3.0, 44, 22, 33},
                 {1.0, 2.0, 3.0, 44, 22, 33},
                 {1.0, 2.0, 3.0, 44, 22, 33},
-                {1.0, 2.0, 3.0, 44, 22, 33},
+                {1.0, 2.0, 3.0, 44, 22, 33}
         };
+
+        int[] points1 = {1,3,2,1};
+        int[] points2 = {1,3,2,1};
+
+        Individual individual1 = new Individual(points1);
+        Individual individual2 = new Individual(points2);
+
+        System.out.println(individual1.toString());
+        System.out.println(individual2.toString());
+
+        Individual individual3 = individual1.mutate();
+
+        System.out.println(individual3.toString());
 
         TSPSolver tspSolver = new TSPSolver();
         tspSolver.setDistances(distances);
-        tspSolver.setPopulationSize(10);
-        tspSolver.setGenerationAmount(3);
         tspSolver.setStartIndex(5);
+        tspSolver.setGenerationAmount(100);
+        tspSolver.setPopulationSize(100);
         tspSolver.init();
-
         tspSolver.generatePopulation();
 
         Arrays.stream(tspSolver.population).forEach(System.out::println);
