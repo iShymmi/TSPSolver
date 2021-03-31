@@ -6,8 +6,6 @@ import java.util.Random;
 public class Individual {
     private final int[] genes;
     private double length;
-    private float crossingProbability;
-    private float mutationProbability;
 
     public Individual(int[] genes) {
         this.genes = genes;
@@ -26,8 +24,8 @@ public class Individual {
         int secondGene;
 
         do{
-            System.out.println(firstGene = random.nextInt(genes.length - 2) + 1);
-            System.out.println(secondGene = random.nextInt(genes.length - 2) + 1);
+            firstGene = random.nextInt(genes.length - 2) + 1;
+            secondGene = random.nextInt(genes.length - 2) + 1;
         }while (firstGene == secondGene);
 
         int temp = genes[firstGene];
@@ -81,22 +79,6 @@ public class Individual {
 
     public void setLength(double length) {
         this.length = length;
-    }
-
-    public float getCrossingProbability() {
-        return crossingProbability;
-    }
-
-    public void setCrossingProbability(float crossingProbability) {
-        this.crossingProbability = crossingProbability;
-    }
-
-    public float getMutationProbability() {
-        return mutationProbability;
-    }
-
-    public void setMutationProbability(float mutationProbability) {
-        this.mutationProbability = mutationProbability;
     }
 
     public String toString() {
