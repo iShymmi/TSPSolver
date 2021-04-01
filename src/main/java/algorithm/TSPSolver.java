@@ -18,6 +18,9 @@ public class TSPSolver {
     private double[][] distances;
     private Individual[] population;
     private Individual[] descendants;
+    private Individual bestIndividual;
+    private double worstIndividualLength;
+    private boolean pocketTrigger;
 
     public TSPSolver() { }
 
@@ -35,15 +38,24 @@ public class TSPSolver {
             init();
         }
 
-        ArrayList<Individual[]> selectedGroup = selectBreedAndMutationGroups();
+        for(int i = 0; i < 50; i++){
+            ArrayList<Individual[]> selectedGroup = selectBreedAndMutationGroups();
 
-        Individual[] breedGroup = selectedGroup.get(0);
-        Individual[] mutationGroup = selectedGroup.get(1);
+            Individual[] breedGroup = selectedGroup.get(0);
+            Individual[] mutationGroup = selectedGroup.get(1);
 
-        descendants = new Individual[(breedGroup.length / 2) + mutationGroup.length];
+            descendants = new Individual[(breedGroup.length / 2) + mutationGroup.length];
 
-        breed(breedGroup,descendants);
-        mutate(mutationGroup,descendants,breedGroup.length / 2);
+            breed(breedGroup,descendants);
+            mutate(mutationGroup,descendants,breedGroup.length / 2);
+
+            for(Individual each : descendants){
+                setLength(each);
+            }
+
+            selection();
+
+        }
     }
 
     /**
@@ -77,9 +89,106 @@ public class TSPSolver {
         return selectedGorups;
     }
 
-    private void selection(){}
+    /**
+     * Selects new population from descendants
+     */
+    private void selection(){
+        double sumOfLengths = 0.0;
+        double transformedLength = 0.0;
+        double bound = 0.0;
+        double ratio;
+        pocketTrigger = true;
 
-    private void countLength(){}
+        Individual[] newPopulation = new Individual[populationSize];
+        prepareForSelection();
+
+        for(Individual each: descendants){
+            transformedLength = each.getReverseLength() + worstIndividualLength + 0.01;
+            each.setReverseLength(transformedLength);
+            sumOfLengths += transformedLength;
+        }
+
+        for(Individual each: descendants){
+            ratio = each.getReverseLength() / sumOfLengths;
+            each.setPickBounds(bound, bound += ratio);
+        }
+
+        for(int i = 0; i < populationSize; i++){
+            double randomPick = random.nextDouble();
+
+            newPopulation[i] = getIndividualByBound(randomPick);
+        }
+
+        if(pocketTrigger){
+            newPopulation[populationSize - 1] = bestIndividual;
+        }
+
+        population = newPopulation;
+    }
+
+    /**
+     * Return copy of Individual which roulettePick value will be its between lower and upper bound
+     * @param roulettePick random double from 0 to 1
+     * @return copy of picked Individual
+     */
+    private Individual getIndividualByBound(double roulettePick){
+        for(Individual each: descendants){
+            if(roulettePick >= each.getLowerPickBound() && roulettePick < each.getUpperPickBound()){
+                if(each.getLength() == bestIndividual.getLength()){
+                    pocketTrigger = false;
+                }
+                return new Individual(each.getGenes());
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Prepares variables before selection process
+     * #1 Reverse length for each Individual from descendants
+     * #2 Picks best individual (The one with shortest length) from all runs
+     * #3 Picks worst individual length (The longest one) from current run
+     */
+    private void prepareForSelection(){
+        int bestIndividualIndex = 0;
+        int worstIndividualIndex = 0;
+
+        for(int i = 0; i < descendants.length; i++){
+            descendants[i].setReverseLength(descendants[i].getLength() * (-1));
+
+            if(descendants[i].getLength() < descendants[bestIndividualIndex].getLength()){
+                bestIndividualIndex = i;
+            }
+
+            if(descendants[i].getLength() > descendants[worstIndividualIndex].getLength()){
+                worstIndividualIndex = i;
+            }
+        }
+
+        // best individual need to store the best individual from every run
+        if(bestIndividual == null){
+            bestIndividual = descendants[bestIndividualIndex];
+        }else {
+            if(bestIndividual.getLength() > descendants[bestIndividualIndex].getLength()){
+                bestIndividual = descendants[bestIndividualIndex];
+            }
+        }
+
+        // have to store worst individual length from current run
+        worstIndividualLength = descendants[worstIndividualIndex].getLength();
+    }
+
+    private void setLength(Individual individual){
+        double length = 0.0;
+        int[] genes = individual.getGenes();
+
+        for(int i = 0; i < genes.length - 1; i++){
+            length += distances[genes[i]][genes[i+1]];
+        }
+
+        individual.setLength(length);
+    }
 
     /**
      * Pick and breed every 2 random Individuals and adds to descendatns array
@@ -239,12 +348,12 @@ public class TSPSolver {
 
     public static void main(String... args){
         double[][] distances = new double[][]{
-                {1.0, 2.0, 3.0, 44, 22, 33},
-                {1.0, 2.0, 3.0, 44, 22, 33},
-                {1.0, 2.0, 3.0, 44, 22, 33},
-                {1.0, 2.0, 3.0, 44, 22, 33},
-                {1.0, 2.0, 3.0, 44, 22, 33},
-                {1.0, 2.0, 3.0, 44, 22, 33}
+                {0 , 16, 47, 72, 77, 79},
+                {16, 0 , 37, 57, 65, 66},
+                {47, 37, 0 , 40, 30, 35},
+                {72, 57, 40, 0 , 31, 23},
+                {77, 65, 30, 31, 0 , 10},
+                {79, 66, 35, 23, 10, 0 }
         };
 
         /*int[] points1 = {1,3,2,1};
@@ -265,13 +374,16 @@ public class TSPSolver {
         tspSolver.setStartIndex(5);
         tspSolver.setGenerationAmount(100);
         tspSolver.setPopulationSize(10);
-        tspSolver.setCrossingPickProbability(1);
-        tspSolver.setMutationPickProbability(1);
+        tspSolver.setCrossingPickProbability(0.5);
+        tspSolver.setMutationPickProbability(0.5);
         tspSolver.init();
         tspSolver.generatePopulation();
 
         tspSolver.run();
 
         Arrays.stream(tspSolver.descendants).forEach(System.out::println);
+
+        System.out.println("\n############### BEST ##############");
+        System.out.println(tspSolver.bestIndividual);
     }
 }

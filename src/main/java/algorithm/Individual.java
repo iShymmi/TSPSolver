@@ -6,6 +6,9 @@ import java.util.Random;
 public class Individual {
     private final int[] genes;
     private double length;
+    private double reverseLength;
+    private double lowerPickBound;
+    private double upperPickBound;
 
     public Individual(int[] genes) {
         this.genes = genes;
@@ -32,7 +35,7 @@ public class Individual {
         genes[firstGene] = genes[secondGene];
         genes[secondGene] = temp;
 
-        return this;
+        return new Individual(this.genes);
     }
 
     /**
@@ -77,8 +80,29 @@ public class Individual {
         return length;
     }
 
+    public double getReverseLength() {
+        return reverseLength;
+    }
+
+    public double getLowerPickBound() {
+        return lowerPickBound;
+    }
+
+    public double getUpperPickBound() {
+        return upperPickBound;
+    }
+
     public void setLength(double length) {
         this.length = length;
+    }
+
+    public void setReverseLength(double reverseLength) {
+        this.reverseLength = reverseLength;
+    }
+
+    public void setPickBounds(double lowerBound, double upperBound){
+        lowerPickBound = lowerBound;
+        upperPickBound = upperBound;
     }
 
     public String toString() {
@@ -86,6 +110,7 @@ public class Individual {
 
         Arrays.stream(genes).forEach(gene -> sb.append(gene).append(", "));
 
-        return sb.toString();
+        return sb.toString() + "length =  " +length + ", reverse length = " +reverseLength
+                +", Lower bound = " +lowerPickBound + ", upper bound = " +upperPickBound;
     }
 }
