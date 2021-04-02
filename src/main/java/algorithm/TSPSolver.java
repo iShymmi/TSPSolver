@@ -5,32 +5,37 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
+import static java.util.Arrays.stream;
+
 public class TSPSolver {
 
+    private double[][] distances;
     private int populationSize;
-    private int generationAmount;
-    private int startIndex = -1;
-    private boolean isInit;
+    private int startIndex;
+    private int stopCondition;
     private double crossingPickProbability;
     private double mutationPickProbability;
-    private Random random;
 
-    private double[][] distances;
+    private Random random;
     private Individual[] population;
     private Individual[] descendants;
     private Individual bestIndividual;
     private double worstIndividualLength;
     private boolean pocketTrigger;
+    private boolean isInit;
 
     public TSPSolver() { }
 
-    public TSPSolver(double[][] distances, int populationSize, int generationAmount, int startIndex) {
+    public TSPSolver(double[][] distances, int startIndex, int populationSize, int stopCondition,
+                     double crossingPickProbability, double mutationPickProbability) {
         isDataValid(distances);
 
         this.distances = distances;
         this.populationSize = populationSize;
-        this.generationAmount = generationAmount;
+        this.stopCondition = stopCondition;
         this.startIndex = startIndex;
+        this.crossingPickProbability = crossingPickProbability;
+        this.mutationPickProbability = mutationPickProbability;
     }
 
     public void run(){
@@ -38,7 +43,7 @@ public class TSPSolver {
             init();
         }
 
-        for(int i = 0; i < 50; i++){
+        for(int i = 0; i < stopCondition; i++){
             ArrayList<Individual[]> selectedGroup = selectBreedAndMutationGroups();
 
             Individual[] breedGroup = selectedGroup.get(0);
@@ -94,7 +99,7 @@ public class TSPSolver {
      */
     private void selection(){
         double sumOfLengths = 0.0;
-        double transformedLength = 0.0;
+        double transformedLength;
         double bound = 0.0;
         double ratio;
         pocketTrigger = true;
@@ -118,10 +123,14 @@ public class TSPSolver {
 
             newPopulation[i] = getIndividualByBound(randomPick);
         }
-
+        System.out.println(pocketTrigger);
         if(pocketTrigger){
-            newPopulation[populationSize - 1] = bestIndividual;
+            System.out.println("Trigger on");
+            newPopulation[populationSize - 1] = bestIndividual.copy();
         }
+
+        System.out.println("###########NEW POPULATION###############");
+        stream(newPopulation).forEach(System.out::println);
 
         population = newPopulation;
     }
@@ -134,14 +143,15 @@ public class TSPSolver {
     private Individual getIndividualByBound(double roulettePick){
         for(Individual each: descendants){
             if(roulettePick >= each.getLowerPickBound() && roulettePick < each.getUpperPickBound()){
-                if(each.getLength() == bestIndividual.getLength()){
+                if(each.equals(bestIndividual)){
                     pocketTrigger = false;
+                    System.out.println("EQUALS");
                 }
-                return new Individual(each.getGenes());
+                return each.copy();
             }
         }
 
-        return null;
+        return descendants[descendants.length - 1].copy();
     }
 
     /**
@@ -168,11 +178,9 @@ public class TSPSolver {
 
         // best individual need to store the best individual from every run
         if(bestIndividual == null){
-            bestIndividual = descendants[bestIndividualIndex];
-        }else {
-            if(bestIndividual.getLength() > descendants[bestIndividualIndex].getLength()){
-                bestIndividual = descendants[bestIndividualIndex];
-            }
+            bestIndividual = descendants[bestIndividualIndex].copy();
+        }else if(bestIndividual.getLength() > descendants[bestIndividualIndex].getLength()){
+                bestIndividual = descendants[bestIndividualIndex].copy();
         }
 
         // have to store worst individual length from current run
@@ -274,11 +282,10 @@ public class TSPSolver {
         throws NullPointerException() if any of argument isn't setted
      */
     private void init(){
-        if(distances.length == 0 || populationSize == 0 || generationAmount == 0 || startIndex == -1){
+        if(distances.length == 0 || populationSize == 0 || startIndex == -1){
             throw new NullPointerException("Invalid one of parameters:"
                     + "\nDistances: " +((distances.length == 0) ? null : distances.length)
                     + "\nPopulation size: "+((populationSize == 0) ? null : populationSize)
-                    + "\nGeneration abount: "+((generationAmount == 0) ? null : generationAmount)
                     + "\nStart index: "+((startIndex == -1) ? null : startIndex));
         }
 
@@ -289,6 +296,14 @@ public class TSPSolver {
         isInit = true;
         random = new Random();
         population = new Individual[populationSize];
+        generatePopulation();
+    }
+
+    private void defaultSetup(){
+        stopCondition = 1;
+        mutationPickProbability = 0.5;
+        crossingPickProbability = 0.5;
+        startIndex = -1;
     }
 
     private void swap(Individual[] array, int firstIndex, int secondIndex){
@@ -320,12 +335,20 @@ public class TSPSolver {
         return isInit;
     }
 
+    public Individual getBestIndividual(){
+        return bestIndividual;
+    }
+
+    public double[][] getDistances() {
+        return distances;
+    }
+
     public void setPopulationSize(int populationSize) {
         this.populationSize = populationSize;
     }
 
-    public void setGenerationAmount(int generationAmount) {
-        this.generationAmount = generationAmount;
+    public void setStopCondition(int stopCondition) {
+        this.stopCondition = stopCondition;
     }
 
     public void setDistances(double[][] distances) {
@@ -347,17 +370,14 @@ public class TSPSolver {
     }
 
     public static void main(String... args){
-        double[][] distances = new double[][]{
+        /*double[][] distances = new double[][]{
                 {0 , 16, 47, 72, 77, 79},
                 {16, 0 , 37, 57, 65, 66},
                 {47, 37, 0 , 40, 30, 35},
                 {72, 57, 40, 0 , 31, 23},
                 {77, 65, 30, 31, 0 , 10},
                 {79, 66, 35, 23, 10, 0 }
-        };
-
-        /*int[] points1 = {1,3,2,1};
-        int[] points2 = {1,3,2,1};
+        }
 
         Individual individual1 = new Individual(points1);
         Individual individual2 = new Individual(points2);
@@ -367,23 +387,27 @@ public class TSPSolver {
 
         Individual individual3 = individual1.mutate();
 
-        System.out.println(individual3.toString());*/
+        System.out.println(individual3.toString());*//*
 
-        TSPSolver tspSolver = new TSPSolver();
-        tspSolver.setDistances(distances);
-        tspSolver.setStartIndex(5);
-        tspSolver.setGenerationAmount(100);
-        tspSolver.setPopulationSize(10);
-        tspSolver.setCrossingPickProbability(0.5);
-        tspSolver.setMutationPickProbability(0.5);
-        tspSolver.init();
-        tspSolver.generatePopulation();
+        TSPSolver tspSolver = new TSPSolver(distances,0,10,1,0.5,0.5);
 
         tspSolver.run();
 
         Arrays.stream(tspSolver.descendants).forEach(System.out::println);
 
         System.out.println("\n############### BEST ##############");
-        System.out.println(tspSolver.bestIndividual);
+        System.out.println(tspSolver.bestIndividual);*/
+
+        //*int[] points1 = {1,3,2,1};
+        int[] points = {1,3,2,1};
+
+        Individual individual1 = new Individual(points);
+        System.out.println(individual1);
+        Individual individual2 = individual1.copy();
+        System.out.println(individual2);
+        individual1.mutate();
+
+        System.out.println("\n"+ individual1);
+        System.out.println(individual2);
     }
 }

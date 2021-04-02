@@ -35,7 +35,7 @@ public class Individual {
         genes[firstGene] = genes[secondGene];
         genes[secondGene] = temp;
 
-        return new Individual(this.genes);
+        return copy();
     }
 
     /**
@@ -70,6 +70,33 @@ public class Individual {
         }
         newGenes[genes.length - 1] = genes[0];
         return new Individual(newGenes);
+    }
+
+    public Individual copy(){
+        int genesLength = this.getGenes().length;
+        int[] newGenes = new int[genesLength];
+
+        System.arraycopy(this.getGenes(), 0, newGenes, 0, genesLength);
+
+        Individual newIndividual = new Individual(newGenes);
+        newIndividual.setLength(this.length);
+
+        return newIndividual;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Individual that = (Individual) o;
+
+        return Arrays.equals(genes, that.genes);
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(genes);
     }
 
     public int[] getGenes() {
