@@ -54,7 +54,7 @@ public class Individual {
         int[] newGenes = new int[genes.length];
         boolean[] tempArray = new boolean[genes.length];
 
-        int crossPoint = random.nextInt(genes.length - 2) + 2;
+        int crossPoint = random.nextInt(genes.length - 1) + 2;
 
         int i;
         for(i = 0; i < crossPoint; i++){

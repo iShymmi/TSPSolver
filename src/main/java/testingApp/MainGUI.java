@@ -5,9 +5,12 @@ import main.java.algorithm.TSPSolver;
 import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.Scanner;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.lang.Math.pow;
 import static java.lang.Math.sqrt;
+import static java.util.Arrays.stream;
 
 public class MainGUI extends JFrame{
 
@@ -77,18 +80,29 @@ public class MainGUI extends JFrame{
         runButton = new JButton("RUN");
         runButton.setEnabled(false);
         runButton.addActionListener((e -> {
+            AtomicBoolean visible = new AtomicBoolean(true);
+            JOptionPane pane = new JOptionPane("Algorithm is running for " +((int)stopConditionSpinner.getValue() / 1000) + "s", JOptionPane.INFORMATION_MESSAGE);
+            JDialog info = pane.createDialog(null, "Action");
+            info.setModal(false);
+            info.setVisible(visible.get());
             canva.clearLines();
-            for(int i = 0; i < (int) timesSpinner.getValue(); i++) {
-                EventQueue.invokeLater(() -> {
-                    tspSolver.run();
-                    System.out.println(tspSolver.getBestIndividual());
 
-                    canva.drawLine(tspSolver.getBestIndividual().getGenes());
-                });
-            }
+            EventQueue.invokeLater(() -> {
+                tspSolver.run();
+                System.out.println("######################BEST################");
+                System.out.println(tspSolver.getBestIndividual());
+                System.out.println("##########################################");
+                canva.drawLine(tspSolver.getBestIndividual().getGenes());
+                visible.set(false);
+            });
+            EventQueue.invokeLater(() -> info.setVisible(false));
         }));
 
         JButton clear = new JButton("CLEAR");
+        clear.addActionListener(e -> {
+            tspSolver.lengthTest(new int[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 0, 1});
+            System.out.println("added");
+        });
 
         navBar.add(times);
         navBar.add(timesSpinner);
@@ -100,6 +114,16 @@ public class MainGUI extends JFrame{
         add(settings,BorderLayout.WEST);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(800, 800);
+
+        Thread thread = new Thread(() ->{
+            Scanner in = new Scanner(System.in);
+            while (true){
+                int[] ids;
+                ids = stream(in.nextLine().trim().split(" ")).mapToInt(Integer::valueOf).toArray();
+                tspSolver.lengthTest(ids);
+            }
+        });
+        thread.start();
     }
 
     public double[][] getDistances(ArrayList<Point> points){
@@ -111,17 +135,18 @@ public class MainGUI extends JFrame{
         double y1;
         double y2;
 
-        for(int i = 0; i < (points.size() / 2) + 1; i++){
+        for(int i = 0; i < points.size() - 1; i++){
             distances[i][i] = 0;
             for(int j = i + 1; j < points.size(); j++){
                 x1 = points.get(i).getX();
-                x2 = points.get(j).getX();
-
                 y1 = points.get(i).getY();
+
+                x2 = points.get(j).getX();
                 y2 = points.get(j).getY();
 
                 distance = sqrt(pow((x2 - x1),2) + pow((y2 - y1),2));
-                distances[i][j] = distances[j][i] = distance;
+                distances[i][j] = distance;
+                distances[j][i] = distance;
             }
         }
 

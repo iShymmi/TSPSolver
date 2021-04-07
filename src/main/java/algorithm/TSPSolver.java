@@ -1,7 +1,6 @@
 package main.java.algorithm;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
@@ -43,16 +42,21 @@ public class TSPSolver {
             init();
         }
 
-        for(int i = 0; i < stopCondition; i++){
+        long start = System.currentTimeMillis();
+        long elapsedTime = 0;
+
+        while(elapsedTime < stopCondition){
+            pickBestIndividual();
             ArrayList<Individual[]> selectedGroup = selectBreedAndMutationGroups();
 
             Individual[] breedGroup = selectedGroup.get(0);
             Individual[] mutationGroup = selectedGroup.get(1);
 
-            descendants = new Individual[(breedGroup.length / 2) + mutationGroup.length];
+            descendants = new Individual[breedGroup.length + mutationGroup.length];
 
             breed(breedGroup,descendants);
-            mutate(mutationGroup,descendants,breedGroup.length / 2);
+
+            mutate(mutationGroup,descendants,breedGroup.length);
 
             for(Individual each : descendants){
                 setLength(each);
@@ -60,7 +64,35 @@ public class TSPSolver {
 
             selection();
 
+            long end = System.currentTimeMillis();
+            elapsedTime = end - start;
         }
+    }
+
+    /**
+     Checks if any of the required variables is empty
+     If it pass validation it inits the population matrix with value of populationSize
+
+     throws NullPointerException() if any of argument isn't setted
+     */
+    private void init(){
+        if(distances.length == 0 || populationSize == 0 || startIndex == -1){
+            throw new NullPointerException("Invalid one of parameters:"
+                    + "\nDistances: " +((distances.length == 0) ? null : distances.length)
+                    + "\nPopulation size: "+((populationSize == 0) ? null : populationSize)
+                    + "\nStart index: "+((startIndex == -1) ? null : startIndex));
+        }
+
+        if(startIndex < 0 || startIndex > distances.length - 1){
+            throw new IllegalArgumentException("Start index is out of bounds");
+        }
+
+        isInit = true;
+        random = new Random();
+        population = new Individual[populationSize];
+        generatePopulation();
+
+        stream(population).forEach(this::setLength);
     }
 
     /**
@@ -83,9 +115,8 @@ public class TSPSolver {
         }
 
         if(breedGroup.size()  % 2 != 0){
-            int[] genesOfRandomIndividual = population[random.nextInt(population.length)].getGenes();
-            Individual copiedIndividual = new Individual(genesOfRandomIndividual);
-            breedGroup.add(copiedIndividual);
+            Individual randomIndividual = population[random.nextInt(population.length)];
+            breedGroup.add(randomIndividual.copy());
         }
 
         selectedGorups.add(breedGroup.toArray(Individual[]::new));
@@ -107,51 +138,31 @@ public class TSPSolver {
         Individual[] newPopulation = new Individual[populationSize];
         prepareForSelection();
 
+        // Transforming length
         for(Individual each: descendants){
             transformedLength = each.getReverseLength() + worstIndividualLength + 0.01;
             each.setReverseLength(transformedLength);
             sumOfLengths += transformedLength;
         }
 
+        // Setting pick bounds
         for(Individual each: descendants){
             ratio = each.getReverseLength() / sumOfLengths;
             each.setPickBounds(bound, bound += ratio);
         }
 
+        // Picking random individual in bounds
         for(int i = 0; i < populationSize; i++){
             double randomPick = random.nextDouble();
 
-            newPopulation[i] = getIndividualByBound(randomPick);
+            newPopulation[i] = getIndividualByBound(randomPick).copy();
         }
-        System.out.println(pocketTrigger);
+
         if(pocketTrigger){
-            System.out.println("Trigger on");
             newPopulation[populationSize - 1] = bestIndividual.copy();
         }
 
-        System.out.println("###########NEW POPULATION###############");
-        stream(newPopulation).forEach(System.out::println);
-
         population = newPopulation;
-    }
-
-    /**
-     * Return copy of Individual which roulettePick value will be its between lower and upper bound
-     * @param roulettePick random double from 0 to 1
-     * @return copy of picked Individual
-     */
-    private Individual getIndividualByBound(double roulettePick){
-        for(Individual each: descendants){
-            if(roulettePick >= each.getLowerPickBound() && roulettePick < each.getUpperPickBound()){
-                if(each.equals(bestIndividual)){
-                    pocketTrigger = false;
-                    System.out.println("EQUALS");
-                }
-                return each.copy();
-            }
-        }
-
-        return descendants[descendants.length - 1].copy();
     }
 
     /**
@@ -165,26 +176,43 @@ public class TSPSolver {
         int worstIndividualIndex = 0;
 
         for(int i = 0; i < descendants.length; i++){
-            descendants[i].setReverseLength(descendants[i].getLength() * (-1));
 
-            if(descendants[i].getLength() < descendants[bestIndividualIndex].getLength()){
+            if(descendants[i].getLength() <= descendants[bestIndividualIndex].getLength()){
                 bestIndividualIndex = i;
             }
 
             if(descendants[i].getLength() > descendants[worstIndividualIndex].getLength()){
                 worstIndividualIndex = i;
             }
+
+            descendants[i].setReverseLength(descendants[i].getLength() * (-1));
         }
 
         // best individual need to store the best individual from every run
-        if(bestIndividual == null){
+        if(descendants[bestIndividualIndex].getLength() < bestIndividual.getLength()){
             bestIndividual = descendants[bestIndividualIndex].copy();
-        }else if(bestIndividual.getLength() > descendants[bestIndividualIndex].getLength()){
-                bestIndividual = descendants[bestIndividualIndex].copy();
         }
 
         // have to store worst individual length from current run
         worstIndividualLength = descendants[worstIndividualIndex].getLength();
+    }
+
+    /**
+     * Return copy of Individual which roulettePick value will be its between lower and upper bound
+     * @param roulettePick random double from 0 to 1
+     * @return copy of picked Individual
+     */
+    private Individual getIndividualByBound(double roulettePick){
+        for(Individual each: descendants){
+            if(roulettePick >= each.getLowerPickBound() && roulettePick < each.getUpperPickBound()){
+                if(each.equals(bestIndividual)){
+                    pocketTrigger = false;
+                }
+                return each;
+            }
+        }
+
+        return descendants[descendants.length - 1];
     }
 
     private void setLength(Individual individual){
@@ -192,10 +220,24 @@ public class TSPSolver {
         int[] genes = individual.getGenes();
 
         for(int i = 0; i < genes.length - 1; i++){
-            length += distances[genes[i]][genes[i+1]];
+            int firstPoint = genes[i];
+            int secondPoint = genes[i + 1];
+            length += distances[firstPoint][secondPoint];
         }
 
         individual.setLength(length);
+    }
+
+    public void pickBestIndividual(){
+        if(bestIndividual == null){
+            bestIndividual = population[0].copy();
+        }
+
+        for (Individual individual : population) {
+            if (individual.getLength() < bestIndividual.getLength()) {
+                bestIndividual = individual.copy();
+            }
+        }
     }
 
     /**
@@ -208,7 +250,7 @@ public class TSPSolver {
         int firstIndividualIndex;
         int secondIndividualIndex;
 
-        for(int i = 0; breedSize != 0; i++){
+        for(int i = 0; breedSize != 0; i += 2){
             do{
                 firstIndividualIndex = random.nextInt(breedSize);
                 secondIndividualIndex = random.nextInt(breedSize);
@@ -216,6 +258,8 @@ public class TSPSolver {
 
             descendants[i] = breedGroup[firstIndividualIndex]
                                         .breed(breedGroup[secondIndividualIndex]);
+            descendants[i + 1] = breedGroup[secondIndividualIndex]
+                    .breed(breedGroup[firstIndividualIndex]);
 
             swap(breedGroup,breedSize - 1, firstIndividualIndex);
             swap(breedGroup, breedSize - 2, secondIndividualIndex);
@@ -241,7 +285,6 @@ public class TSPSolver {
         Generates individuals with a random arrangement of genes
      */
     private void generatePopulation(){
-
         for(int i = 0; i < population.length; i++){
             population[i] = new Individual(shuffleGenes());
         }
@@ -273,37 +316,6 @@ public class TSPSolver {
         }
 
         return genesIndexes;
-    }
-
-    /**
-        Checks if any of the required variables is empty
-        If it pass validation it inits the population matrix with value of populationSize
-
-        throws NullPointerException() if any of argument isn't setted
-     */
-    private void init(){
-        if(distances.length == 0 || populationSize == 0 || startIndex == -1){
-            throw new NullPointerException("Invalid one of parameters:"
-                    + "\nDistances: " +((distances.length == 0) ? null : distances.length)
-                    + "\nPopulation size: "+((populationSize == 0) ? null : populationSize)
-                    + "\nStart index: "+((startIndex == -1) ? null : startIndex));
-        }
-
-        if(startIndex < 0 || startIndex > distances.length - 1){
-            throw new IllegalArgumentException("Start index is out of bounds");
-        }
-
-        isInit = true;
-        random = new Random();
-        population = new Individual[populationSize];
-        generatePopulation();
-    }
-
-    private void defaultSetup(){
-        stopCondition = 1;
-        mutationPickProbability = 0.5;
-        crossingPickProbability = 0.5;
-        startIndex = -1;
     }
 
     private void swap(Individual[] array, int firstIndex, int secondIndex){
@@ -339,10 +351,6 @@ public class TSPSolver {
         return bestIndividual;
     }
 
-    public double[][] getDistances() {
-        return distances;
-    }
-
     public void setPopulationSize(int populationSize) {
         this.populationSize = populationSize;
     }
@@ -369,45 +377,9 @@ public class TSPSolver {
         this.mutationPickProbability = mutationPickProbability;
     }
 
-    public static void main(String... args){
-        /*double[][] distances = new double[][]{
-                {0 , 16, 47, 72, 77, 79},
-                {16, 0 , 37, 57, 65, 66},
-                {47, 37, 0 , 40, 30, 35},
-                {72, 57, 40, 0 , 31, 23},
-                {77, 65, 30, 31, 0 , 10},
-                {79, 66, 35, 23, 10, 0 }
-        }
-
-        Individual individual1 = new Individual(points1);
-        Individual individual2 = new Individual(points2);
-
-        System.out.println(individual1.toString());
-        System.out.println(individual2.toString());
-
-        Individual individual3 = individual1.mutate();
-
-        System.out.println(individual3.toString());*//*
-
-        TSPSolver tspSolver = new TSPSolver(distances,0,10,1,0.5,0.5);
-
-        tspSolver.run();
-
-        Arrays.stream(tspSolver.descendants).forEach(System.out::println);
-
-        System.out.println("\n############### BEST ##############");
-        System.out.println(tspSolver.bestIndividual);*/
-
-        //*int[] points1 = {1,3,2,1};
-        int[] points = {1,3,2,1};
-
-        Individual individual1 = new Individual(points);
-        System.out.println(individual1);
-        Individual individual2 = individual1.copy();
-        System.out.println(individual2);
-        individual1.mutate();
-
-        System.out.println("\n"+ individual1);
-        System.out.println(individual2);
+    public void lengthTest(int[] points){
+        Individual best = new Individual(points);
+        setLength(best);
+        System.out.println(best);
     }
 }
