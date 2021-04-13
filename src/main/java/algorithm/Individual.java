@@ -5,6 +5,8 @@ import java.util.Random;
 
 public class Individual {
     private final int[] genes;
+
+    // length equals the fitness of the individual. less = better
     private double length;
     private double reverseLength;
     private double lowerPickBound;

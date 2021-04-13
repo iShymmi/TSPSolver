@@ -7,6 +7,9 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.Line2D;
 import java.util.ArrayList;
 
+import static java.lang.Math.pow;
+import static java.lang.Math.sqrt;
+
 public class Canva extends JPanel {
 
     private static final long serialVersionUID = 1L;
@@ -62,6 +65,33 @@ public class Canva extends JPanel {
     public void clearLines(){
         lines = new ArrayList<>();
         repaint();
+    }
+
+    public double[][] getEuclideanDistances() {
+        double[][] distances = new double[points.size()][points.size()];
+        double distance;
+        double x1;
+        double x2;
+
+        double y1;
+        double y2;
+
+        for (int i = 0; i < points.size() - 1; i++) {
+            distances[i][i] = 0;
+            for (int j = i + 1; j < points.size(); j++) {
+                x1 = points.get(i).getX();
+                y1 = points.get(i).getY();
+
+                x2 = points.get(j).getX();
+                y2 = points.get(j).getY();
+
+                distance = sqrt(pow((x2 - x1), 2) + pow((y2 - y1), 2));
+                distances[i][j] = distance;
+                distances[j][i] = distance;
+            }
+        }
+
+        return distances;
     }
 
     public ArrayList<Point> getPoints() {
