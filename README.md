@@ -237,5 +237,3 @@ mvn exec:java -Dexec.mainClass=testingApp.AppMain
 ![1](https://user-images.githubusercontent.com/15768915/115063038-55dd4600-9eeb-11eb-9199-30f9362ef3f0.png)
 ![2](https://user-images.githubusercontent.com/15768915/115063084-642b6200-9eeb-11eb-8518-976de73ec651.png)
 ![3](https://user-images.githubusercontent.com/15768915/115063085-642b6200-9eeb-11eb-8059-5f96b00aabc5.png)
-
-

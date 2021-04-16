@@ -1,6 +1,6 @@
-package main.java.testingApp;
+package testingApp;
 
-import main.java.algorithm.TSPSolver;
+import algorithm.TSPSolver;
 
 import java.awt.*;
 

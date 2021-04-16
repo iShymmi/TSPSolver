@@ -1,4 +1,4 @@
-package main.java.testingApp;
+package testingApp;
 
 import javax.swing.*;
 import java.awt.*;
@@ -25,6 +25,7 @@ public class MainFrame extends JFrame {
         add(settingsPanel, BorderLayout.CENTER);
 
         pack();
+        setAlwaysOnTop(true);
         setMinimumSize(new Dimension(400,100));
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
     }
@@ -85,6 +86,7 @@ public class MainFrame extends JFrame {
 
     public void exposeSettings(){
         settingsPanel.setVisible(true);
+        this.setSize(400,400);
     }
 
     public JButton getDrawPointsButton() {

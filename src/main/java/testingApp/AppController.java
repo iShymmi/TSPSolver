@@ -1,6 +1,6 @@
-package main.java.testingApp;
+package testingApp;
 
-import main.java.algorithm.TSPSolver;
+import algorithm.TSPSolver;
 
 import java.awt.*;
 
@@ -22,18 +22,15 @@ public class AppController {
         setupEvents();
     }
 
-    public void run(){
+    public void run() {
         mainFrame.setVisible(true);
     }
 
-    private void setupEvents(){
-            mainFrame.getDrawPointsButton().addActionListener(e -> this.drawPoints());
-
-            mainFrame.getSetButton().addActionListener(e -> this.setData());
-
-            mainFrame.getRunButton().addActionListener(e -> this.runAlgorithm());
-
-            canvaFrame.getSetButton().addActionListener(e -> this.setPoints());
+    private void setupEvents() {
+        mainFrame.getDrawPointsButton().addActionListener(e -> this.drawPoints());
+        mainFrame.getSetButton().addActionListener(e -> this.setData());
+        mainFrame.getRunButton().addActionListener(e -> this.runAlgorithm());
+        canvaFrame.getSetButton().addActionListener(e -> this.setPoints());
     }
 
     public void drawPoints() {
@@ -57,20 +54,16 @@ public class AppController {
 
         tspSolver.setDistances(distances);
         mainFrame.exposeSettings();
-        mainFrame.setSize(400,400);
         canvaFrame.getSetButton().setEnabled(false);
-        stream(canva.getMouseListeners()).forEach(mouseListener ->
-                canva.removeMouseListener(mouseListener));
+        stream(canva.getMouseListeners()).forEach(canva::removeMouseListener);
     }
 
     public void runAlgorithm() {
         canva.clearLines();
+        tspSolver.run();
 
         EventQueue.invokeLater(() -> {
-            tspSolver.run();
             canva.drawLine(tspSolver.getBestIndividual().getGenes());
         });
-
-
     }
 }

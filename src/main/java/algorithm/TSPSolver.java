@@ -1,4 +1,4 @@
-package main.java.algorithm;
+package algorithm;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,7 +46,6 @@ public class TSPSolver {
         long elapsedTime = 0;
 
         while(elapsedTime < stopCondition){
-            pickBestIndividual();
             ArrayList<Individual[]> selectedGroup = selectBreedAndMutationGroups();
 
             Individual[] breedGroup = selectedGroup.get(0);
@@ -93,6 +92,7 @@ public class TSPSolver {
         generatePopulation();
 
         stream(population).forEach(this::setLength);
+        pickBestIndividual();
     }
 
     /**
@@ -375,11 +375,5 @@ public class TSPSolver {
 
     public void setMutationPickProbability(double mutationPickProbability) {
         this.mutationPickProbability = mutationPickProbability;
-    }
-
-    public void lengthTest(int[] points){
-        Individual best = new Individual(points);
-        setLength(best);
-        System.out.println(best);
     }
 }
